@@ -20,19 +20,27 @@ module.exports.index = async(req,res) => {
 
 //[GET] /products/:slug
 module.exports.detail = async(req,res) => {
-    // try{
+    try {
         const find = {
             deleted: false,
             slug: req.params.slug,
             status: "active"
         };
         const product = await Product.findOne(find);
-        console.log(product)
+        
+        if(!product) {
+            return res.redirect("/products");
+        }
+        
+        const priceNew = (product.price*(100-product.discountPercentage)/100).toFixed(0);
+        product.priceNew = priceNew;
+        
         res.render("client/pages/products/detail",{
             pageTitle: product.title,
             product: product
         });
-    // } catch(error){
-    //     res.redirect(req.get('Referrer'));
-    // }
+    } catch(error) {
+        console.error("detail error:", error);
+        res.redirect("/products");
+    }
 }
