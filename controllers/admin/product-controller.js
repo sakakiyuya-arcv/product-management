@@ -68,7 +68,7 @@ module.exports.changeMulti = async(req,res) => {
             req.flash("success", `Cập nhật trạng thái của ${ids.length} sản phẩm thành công!`);
             break;
         case "delete-all":
-            await Product.updateMany({_id: {$in: ids}},{deleted: "true", deletedAt: new Date()});
+            await Product.updateMany({_id: {$in: ids}},{deleted: true, deletedAt: new Date()});
             req.flash("success", `Đã xóa ${ids.length} sản phẩm thành công!`);
             break;
         case "change-position":
