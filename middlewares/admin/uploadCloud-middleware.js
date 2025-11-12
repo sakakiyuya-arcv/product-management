@@ -9,29 +9,35 @@ cloudinary.config({
 
 module.exports.upload = (req, res, next) => {
     if(req.file){
-        let streamUpload = (req) => {
+        let streamUpload = (fileBuffer) => {
             return new Promise((resolve, reject) => {
                 let stream = cloudinary.uploader.upload_stream(
-                (error, result) => {
-                    if (result) {
-                        resolve(result);
-                    } else {
-                        reject(error);
+                    (error, result) => {
+                        if (result) {
+                            resolve(result);
+                        } else {
+                            reject(error);
+                        }
                     }
-                });
-
-                streamifier.createReadStream(req.file.buffer).pipe(stream);
+                );
+                streamifier.createReadStream(fileBuffer).pipe(stream);
             });
         };
 
-        async function upload(req) {
-            let result = await streamUpload(req);
-            req.body[req.file.fieldname] = result.secure_url;
-            next();
+        async function upload() {
+            try {
+                let result = await streamUpload(req.file.buffer);
+                req.body[req.file.fieldname] = result.secure_url;
+                next();
+            } catch(error) {
+                console.error("uploadCloud error:", error);
+                req.flash("error", "Lỗi khi upload ảnh!");
+                res.redirect(req.get('Referrer'));
+            }
         }
 
-        upload(req);
-    }else{
+        upload();
+    } else {
         next();
     }
 }
