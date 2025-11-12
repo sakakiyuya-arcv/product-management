@@ -3,8 +3,8 @@ const route = express.Router();
 const controller = require("../../controllers/admin/product-controller");
 const { prefixAdmin } = require('../../config/system');
 const multer = require('multer');
-const storageMulter = require('../../helpers/storageMulter');
-const upload = multer({ storage: storageMulter() });
+const upload = multer();
+const uploadClound = require("../../middlewares/admin/uploadCloud-middleware")
 const validate = require("../../validates/admin/product-validate");
 
 route.get('/', controller.product)
@@ -16,6 +16,7 @@ route.get('/edit/:id', controller.edit)
 route.patch(
     '/edit/:id', 
     upload.single("thumbnail"), 
+    uploadClound.upload,
     validate.createPost,
     controller.editPatch
 )
@@ -29,6 +30,7 @@ route.delete('/delete/:id', controller.deleteItem)
 route.post(
     '/create',
     upload.single('thumbnail'),
+    uploadClound.upload,
     validate.createPost,
     controller.createPost
 )
