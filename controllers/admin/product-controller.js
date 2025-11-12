@@ -6,52 +6,66 @@ const { prefixAdmin } = require("../../config/system");
 // [GET] /admin/products
 
 module.exports.product = async(req,res) => {
-    const filterStatus = filterStatusHelper(req.query);
+    try {
+        const filterStatus = filterStatusHelper(req.query);
 
-    let find = {
-        deleted: false
+        let find = {
+            deleted: false
+        }
+        if(req.query.status){
+            find.status = req.query.status;
+        }
+
+        let objectSearch = searchHelper(req.query)
+        if(objectSearch.regex){
+            find.title = objectSearch.regex
+        }
+
+        const countProducts = await Product.countDocuments(find).maxTimeMS(15000);
+
+        let objectPagination = paginationHelper(
+            {
+                currentPage: 1,
+                limititems: 4
+            },
+            req.query,
+            countProducts
+        );
+
+        const products = await Product.find(find)
+            .sort({position: "desc"})
+            .limit(objectPagination.limititems)
+            .skip(objectPagination.skip)
+            .maxTimeMS(15000);
+            
+        res.render("admin/pages/product/index",{
+            pageTitle: "Trang sản phẩm",
+            products: products,
+            filterStatus: filterStatus,
+            keyword: objectSearch.keyword,
+            pagination: objectPagination
+        });
+    } catch(error) {
+        console.error("product error:", error);
+        req.flash("error", "Lỗi khi tải danh sách sản phẩm!");
+        res.redirect(req.get('Referrer') || prefixAdmin+"/products");
     }
-    if(req.query.status){
-        find.status = req.query.status;
-    }
-
-    let objectSearch = searchHelper(req.query)
-    if(objectSearch.regex){
-        find.title = objectSearch.regex
-    }
-
-    const countProducts = await Product.countDocuments(find);
-
-    let objectPagination = paginationHelper(
-        {
-            currentPage: 1,
-            limititems: 4
-        },
-        req.query,
-        countProducts
-    );
-
-    const products =  await Product.find(find)
-        .sort({position: "desc"})
-        .limit(objectPagination.limititems)
-        .skip(objectPagination.skip);
-    res.render("admin/pages/product/index",{
-        pageTitle: "Trang sản phẩm",
-        products: products,
-        filterStatus: filterStatus,
-        keyword: objectSearch.keyword,
-        pagination: objectPagination
-    });
 }
 
 // [PATCH] /admin/products/change-status/:status/:id
 module.exports.changeStatus = async(req,res) => {
-    const status = req.params.status;
-    const id = req.params.id;
-    
-    await Product.updateOne({_id: id},{status: status});
-    req.flash("success", `Cập nhật trạng thái thành công!`);
-    res.redirect(req.get('Referrer'));
+    try {
+        const status = req.params.status;
+        const id = req.params.id;
+        
+        await Product.updateOne({_id: id},{status: status});
+        req.flash("success", `Cập nhật trạng thái thành công!`);
+        res.redirect(req.get('Referrer'));
+    } catch(error) {
+        console.error("changeStatus error:", error);
+        req.flash("error", "Lỗi khi cập nhật!");
+        res.redirect(req.get('Referrer'));
+    }
 }
 
 // [PATCH] /admin/products/change-multi
